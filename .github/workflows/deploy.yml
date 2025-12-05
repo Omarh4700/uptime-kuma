@@ -1,0 +1,40 @@
+name: Deploy Frontend
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Step
+        run: echo "Building frontend..."
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_DNS }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Create app directory
+            mkdir -p ~/app
+            cd ~/app
+
+            # Clone repo
+            if [ -d ".git" ]; then
+              git pull origin master
+            else
+              git clone https://github.com/louislam/uptime-kuma . || git clone ${{ github.server_url }}/${{ github.repository }} .
+            fi
+
+            # Deploy
+            docker-compose up -d
